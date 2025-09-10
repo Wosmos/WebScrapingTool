@@ -4,7 +4,7 @@ integrations = ["web_scraper:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["glibcLocales"]
+packages = ["freetype", "glibcLocales"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -37,7 +37,3 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 34121
-externalPort = 3000
