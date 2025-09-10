@@ -89,7 +89,8 @@ def create_download_link(data, filename, file_type="text"):
                             ws[cell_addr].value = str(row.get(col, ''))
             else:
                 ws['A1'].value = "Content"
-                ws['A2'].value = str(data)[:32000]  # Limit content size
+                content_str = str(data) if not isinstance(data, dict) else json.dumps(data, indent=2)
+                ws['A2'].value = content_str[:32000]  # Limit content size
             
         wb.save(output)
         b64 = base64.b64encode(output.getvalue()).decode()
@@ -655,12 +656,12 @@ def extract_html_content(url: str) -> dict:
     try:
         # Use the existing web_scraper function but enhance the result
         content = get_website_text_content(url)
+        result['content'] = content or ""
         
         # Also get raw HTML for additional processing
         response = httpx.get(url, timeout=30)
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        result['content'] = content
         result['title'] = soup.title.string if soup.title else 'Untitled'
         
         # Extract links
