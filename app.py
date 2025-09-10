@@ -24,14 +24,9 @@ import threading
 
 # Admin credentials from environment variables
 import os
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-
-# Validate required environment variables
-if not ADMIN_USERNAME or not ADMIN_PASSWORD:
-    st.error("🔒 **Security Error**: ADMIN_USERNAME and ADMIN_PASSWORD environment variables must be set for secure authentication.")
-    st.info("💡 **Setup Instructions**: Set these environment variables before running the application:\n- ADMIN_USERNAME=your_username\n- ADMIN_PASSWORD=your_secure_password")
-    st.stop()
+# Set admin credentials as requested
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "your_username")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "your_secure_password")
 
 def is_valid_url(url):
     """Validate URL format"""
