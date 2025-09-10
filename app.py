@@ -625,11 +625,15 @@ def extract_xml_content(url: str) -> dict:
     try:
         response = httpx.get(url, timeout=30)
         
-        # Parse XML with lxml
-        root = lxml.html.fromstring(response.content)
-        
-        # Extract text content
-        result['content'] = lxml.html.tostring(root, pretty_print=True, encoding='unicode')
+        # Parse XML with proper XML parser
+        from lxml import etree
+        try:
+            root = etree.fromstring(response.content)
+            result['content'] = etree.tostring(root, pretty_print=True, encoding='unicode')
+        except etree.XMLSyntaxError:
+            # Fallback to HTML parser if XML parsing fails
+            root = lxml.html.fromstring(response.content)
+            result['content'] = lxml.html.tostring(root, pretty_print=True, encoding='unicode')
         result['title'] = "XML Document"
         
         # Extract metadata
