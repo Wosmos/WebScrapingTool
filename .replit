@@ -20,15 +20,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Streamlit Web Scraper"
+args = "Modern Web Scraper"
 
 [[workflows.workflow]]
-name = "Streamlit Web Scraper"
+name = "Modern Web Scraper"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port 5000"
+args = "uvicorn main:app --host 0.0.0.0 --port 5000 --reload"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -41,3 +41,7 @@ externalPort = 80
 [[ports]]
 localPort = 40219
 externalPort = 3001
+
+[[ports]]
+localPort = 40523
+externalPort = 3000

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Web Scraper{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">Welcome back, {{ user.username }}! 👋</h1>
+                <p class="text-indigo-100 text-lg">Ready to extract some amazing content today?</p>
+            </div>
+            <div class="hidden md:block">
+                <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center animate-float">
+                    <i class="fas fa-chart-line text-3xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="/scraper" class="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 card-hover p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i class="fas fa-globe text-white text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Single URL</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Extract content from one website</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/batch" class="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 card-hover p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i class="fas fa-layer-group text-white text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Batch Processing</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Process multiple URLs at once</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/history" class="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 card-hover p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i class="fas fa-history text-white text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">View History</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Check past scraping sessions</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                <i class="fas fa-clock mr-3"></i>
+                Recent Activity
+            </h2>
+        </div>
+        <div class="p-6">
+            {% if recent_sessions %}
+            <div class="space-y-4">
+                {% for session in recent_sessions %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-file-alt text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 dark:text-white">Session #{{ session.id }}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ session.created_at.strftime('%Y-%m-%d %H:%M') if session.created_at else 'No date' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium">
+                            {% if session.status == 'completed' %}
+                                <i class="fas fa-check mr-1"></i>Completed
+                            {% elif session.status == 'in_progress' %}
+                                <i class="fas fa-spinner mr-1"></i>In Progress
+                            {% else %}
+                                <i class="fas fa-clock mr-1"></i>{{ session.status|title }}
+                            {% endif %}
+                        </span>
+                        <button onclick="viewSession({{ session.id }})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <div class="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-inbox text-gray-400 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No recent activity</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Start your first scraping session to see results here.</p>
+                <a href="/scraper" class="inline-flex items-center px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity">
+                    <i class="fas fa-plus mr-2"></i>
+                    Start Scraping
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-globe text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ recent_sessions|length }}</p>
+                    <p class="text-gray-600 dark:text-gray-400">Recent Sessions</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">100%</p>
+                    <p class="text-gray-600 dark:text-gray-400">Success Rate</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-download text-purple-600 dark:text-purple-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">5+</p>
+                    <p class="text-gray-600 dark:text-gray-400">Export Formats</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-bolt text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">Fast</p>
+                    <p class="text-gray-600 dark:text-gray-400">AI Processing</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewSession(sessionId) {
+    // Redirect to session details
+    window.location.href = `/history#session-${sessionId}`;
+}
+</script>
+{% endblock %}
