@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}History - Smart Web Scraper{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                    <i class="fas fa-history mr-3 text-indigo-600"></i>
+                    Scraping History
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">View and manage your past scraping sessions</p>
+            </div>
+            <div class="hidden md:block">
+                <div class="w-16 h-16 gradient-bg rounded-xl flex items-center justify-center animate-float">
+                    <i class="fas fa-chart-bar text-white text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if sessions %}
+    <!-- Sessions List -->
+    <div class="space-y-4">
+        {% for session in sessions %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-file-alt text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                {{ session.session_name or "Session #" + session.id|string }}
+                            </h3>
+                            <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                                <span>
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    {{ session.created_at.strftime('%Y-%m-%d %H:%M') if session.created_at else 'No date' }}
+                                </span>
+                                <span>
+                                    <i class="fas fa-link mr-1"></i>
+                                    {{ session.total_urls }} URL(s)
+                                </span>
+                                <span>
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    {{ session.completed_urls }}/{{ session.total_urls }} completed
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <!-- Status Badge -->
+                        <span class="px-3 py-1 rounded-full text-sm font-medium
+                            {% if session.status == 'completed' %}
+                                bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200
+                            {% elif session.status == 'in_progress' %}
+                                bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200
+                            {% elif session.status == 'failed' %}
+                                bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200
+                            {% else %}
+                                bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200
+                            {% endif %}">
+                            {% if session.status == 'completed' %}
+                                <i class="fas fa-check mr-1"></i>Completed
+                            {% elif session.status == 'in_progress' %}
+                                <i class="fas fa-spinner mr-1"></i>In Progress
+                            {% elif session.status == 'failed' %}
+                                <i class="fas fa-exclamation-triangle mr-1"></i>Failed
+                            {% else %}
+                                <i class="fas fa-clock mr-1"></i>{{ session.status|title }}
+                            {% endif %}
+                        </span>
+
+                        <!-- Actions -->
+                        <div class="flex space-x-2">
+                            <button onclick="viewSessionDetails({{ session.id }})" 
+                                    class="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg transition-colors"
+                                    title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="downloadSession({{ session.id }})" 
+                                    class="p-2 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"
+                                    title="Download">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button onclick="deleteSession({{ session.id }})" 
+                                    class="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
+                                    title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar (for in-progress sessions) -->
+                {% if session.status == 'in_progress' and session.total_urls > 0 %}
+                <div class="mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <span>Progress</span>
+                        <span>{{ ((session.completed_urls / session.total_urls) * 100)|round|int }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                             style="width: {{ ((session.completed_urls / session.total_urls) * 100)|round }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination (if needed) -->
+    {% if sessions|length >= 10 %}
+    <div class="flex justify-center">
+        <nav class="flex space-x-2">
+            <button class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">
+                Previous
+            </button>
+            <button class="px-3 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700">
+                1
+            </button>
+            <button class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">
+                Next
+            </button>
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
+        <div class="w-24 h-24 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-inbox text-gray-400 text-3xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No scraping history yet</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            Start your first scraping session to see results and history here. All your extracted content will be saved and accessible.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/scraper" class="inline-flex items-center px-6 py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity">
+                <i class="fas fa-globe mr-2"></i>
+                Start Single URL Scraping
+            </a>
+            <a href="/batch" class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-layer-group mr-2"></i>
+                Start Batch Scraping
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Session Details Modal -->
+<div id="sessionModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeSessionModal()"></div>
+        
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="modalTitle">
+                        Session Details
+                    </h3>
+                    <button onclick="closeSessionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="modalContent" class="space-y-4">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function viewSessionDetails(sessionId) {
+    try {
+        const response = await fetch(`/api/session/${sessionId}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Error loading session details: ' + data.error);
+            return;
+        }
+        
+        // Display session details in modal
+        document.getElementById('modalTitle').textContent = `Session #${sessionId} Details`;
+        document.getElementById('modalContent').innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Session Information</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Session ID:</span>
+                            <span class="font-medium text-gray-900 dark:text-white">#${sessionId}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                            <span class="font-medium text-gray-900 dark:text-white">${data.status || 'Unknown'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Extracted Content</h4>
+                    <div class="max-h-64 overflow-y-auto">
+                        <pre class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('sessionModal').classList.remove('hidden');
+    } catch (error) {
+        alert('Error loading session details: ' + error.message);
+    }
+}
+
+function closeSessionModal() {
+    document.getElementById('sessionModal').classList.add('hidden');
+}
+
+async function downloadSession(sessionId) {
+    try {
+        const response = await fetch(`/api/session/${sessionId}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Error downloading session: ' + data.error);
+            return;
+        }
+        
+        // Create and download JSON file
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `session_${sessionId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        alert('Error downloading session: ' + error.message);
+    }
+}
+
+function deleteSession(sessionId) {
+    if (confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+        // TODO: Implement delete functionality
+        alert('Delete functionality will be implemented soon.');
+    }
+}
+</script>
+{% endblock %}

@@ -12,7 +12,7 @@ from pydantic import BaseModel
 import os
 import asyncio
 from datetime import datetime
-from database import DatabaseManager
+from database import ScrapingDatabase
 from web_scraper import get_website_text_content
 import json
 import traceback
@@ -28,7 +28,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Database
-db = DatabaseManager()
+db = ScrapingDatabase()
 
 # Admin credentials
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'your_username')
@@ -109,7 +109,7 @@ async def login_api(request: Request, login_data: LoginRequest):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, user = Depends(require_auth)):
     """Modern dashboard"""
-    recent_sessions = db.get_recent_sessions(limit=6)
+    recent_sessions = db.get_sessions()[:6]  # Get first 6 sessions
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user": user,
@@ -135,7 +135,7 @@ async def batch_scraper_page(request: Request, user = Depends(require_auth)):
 @app.get("/history", response_class=HTMLResponse)
 async def history_page(request: Request, user = Depends(require_auth)):
     """Scraping history page"""
-    sessions_data = db.get_all_sessions()
+    sessions_data = db.get_sessions()
     return templates.TemplateResponse("history.html", {
         "request": request,
         "user": user,
@@ -147,14 +147,14 @@ async def scrape_single_url(request: Request, scrape_data: ScrapeRequest, user =
     """API endpoint for single URL scraping"""
     try:
         # Start scraping session
-        session_id = db.start_session([scrape_data.url])
+        session_id = db.create_session(f"Single URL: {scrape_data.url}", 1)
         
         # Extract content
         content = get_website_text_content(scrape_data.url)
         
         if content:
             # Store the result
-            db.store_scraped_data(session_id, scrape_data.url, content)
+            db.save_scraped_data(session_id, scrape_data.url, content, title=scrape_data.url)
             
             # Calculate metrics
             word_count = len(content.split()) if content else 0
@@ -190,14 +190,14 @@ async def scrape_batch_urls(request: Request, batch_data: ScrapeBatchRequest, us
     """API endpoint for batch URL scraping"""
     try:
         # Start scraping session
-        session_id = db.start_session(batch_data.urls)
+        session_id = db.create_session(f"Batch: {len(batch_data.urls)} URLs", len(batch_data.urls))
         results = []
         
         for url in batch_data.urls:
             try:
                 content = get_website_text_content(url)
                 if content:
-                    db.store_scraped_data(session_id, url, content)
+                    db.save_scraped_data(session_id, url, content, title=url)
                     results.append({
                         "url": url,
                         "success": True,
