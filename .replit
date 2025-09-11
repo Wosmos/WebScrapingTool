@@ -4,7 +4,7 @@ integrations = ["web_scraper:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["file", "freetype", "glibcLocales", "xcodebuild", "zlib"]
+packages = ["file", "freetype", "glibcLocales", "libxcrypt", "xcodebuild", "zlib"]
 
 [deployment]
 deploymentTarget = "autoscale"
