@@ -72,8 +72,8 @@
     {% block head %}{% endblock %}
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300" x-data="{ darkMode: false, sidebarOpen: false }" 
-      x-init="darkMode = localStorage.getItem('darkMode') === 'true'" 
-      :class="{ 'dark': darkMode }">
+      x-init="darkMode = localStorage.getItem('darkMode') === 'true'; document.documentElement.classList.toggle('dark', darkMode)" 
+      :class="{ 'dark': darkMode }"
 
     <!-- Navigation -->
     {% if user %}
@@ -91,7 +91,7 @@
                 
                 <div class="flex items-center space-x-4">
                     <!-- Dark mode toggle -->
-                    <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)" 
+                    <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode); document.documentElement.classList.toggle('dark', darkMode)" 
                             class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                         <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'" class="text-xl"></i>
                     </button>
