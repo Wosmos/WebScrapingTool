@@ -3,29 +3,28 @@ Modern FastAPI Web Scraper Application
 Built with contemporary design and proper separation of UI from logic
 """
 
-from fastapi import FastAPI, Request, Depends, HTTPException, Form, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
-import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import ScrapingDatabase
 from web_scraper import get_website_text_content
-import json
-import traceback
 from typing import Optional
+import secrets
 
 # Initialize FastAPI app
-app = FastAPI(title="Smart Web Scraper", description="Modern web scraping platform")
+app = FastAPI(title="Smart Web Scraper API", description="Modern web scraping API")
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Templates
-templates = Jinja2Templates(directory="templates")
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Database
 db = ScrapingDatabase()
@@ -36,6 +35,9 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'your_secure_password')
 
 # Session storage (in production, use Redis or database)
 sessions = {}
+
+# Token expiry time
+TOKEN_EXPIRY_HOURS = 24
 
 # Pydantic models
 class LoginRequest(BaseModel):
@@ -52,10 +54,21 @@ class ScrapeBatchRequest(BaseModel):
 
 # Authentication dependency
 async def get_current_user(request: Request):
-    session_id = request.cookies.get("session_id")
-    if not session_id or session_id not in sessions:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
         return None
-    return sessions[session_id]
+    
+    token = auth_header.replace("Bearer ", "")
+    if token not in sessions:
+        return None
+    
+    session = sessions[token]
+    # Check if token expired
+    if datetime.now() > session.get("expires_at", datetime.now()):
+        del sessions[token]
+        return None
+    
+    return session
 
 async def require_auth(request: Request):
     user = await get_current_user(request)
@@ -64,83 +77,54 @@ async def require_auth(request: Request):
     return user
 
 # Routes
-@app.get("/", response_class=HTMLResponse)
-async def landing_page(request: Request):
-    """Modern landing page"""
-    user = await get_current_user(request)
-    return templates.TemplateResponse("landing.html", {
-        "request": request, 
-        "user": user
-    })
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    """Modern login page"""
-    user = await get_current_user(request)
-    if user:
-        return RedirectResponse(url="/dashboard", status_code=302)
-    return templates.TemplateResponse("auth/login.html", {"request": request})
+@app.get("/")
+async def root():
+    """API root endpoint"""
+    return {
+        "message": "Smart Web Scraper API",
+        "version": "2.0",
+        "docs": "/docs"
+    }
 
 @app.post("/api/login")
-async def login_api(request: Request, login_data: LoginRequest):
-    """Login API endpoint"""
+async def login_api(login_data: LoginRequest):
+    """Login API endpoint - returns JWT-like token"""
     if login_data.username == ADMIN_USERNAME and login_data.password == ADMIN_PASSWORD:
-        # Create session
-        session_id = f"session_{datetime.now().timestamp()}"
-        sessions[session_id] = {
+        # Create session token
+        token = secrets.token_urlsafe(32)
+        sessions[token] = {
             "username": login_data.username,
             "authenticated": True,
-            "login_time": datetime.now()
+            "login_time": datetime.now(),
+            "expires_at": datetime.now() + timedelta(hours=TOKEN_EXPIRY_HOURS)
         }
         
-        response = JSONResponse({
+        return {
             "success": True, 
             "message": "Login successful",
-            "redirect": "/dashboard"
-        })
-        response.set_cookie("session_id", session_id, httponly=True, max_age=86400)
-        return response
+            "token": token,
+            "username": login_data.username,
+            "expires_in": TOKEN_EXPIRY_HOURS * 3600  # seconds
+        }
     else:
-        return JSONResponse({
-            "success": False, 
-            "message": "Invalid credentials"
-        }, status_code=401)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, user = Depends(require_auth)):
-    """Modern dashboard"""
-    recent_sessions = db.get_sessions()[:6]  # Get first 6 sessions
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+@app.get("/api/dashboard")
+async def dashboard(user = Depends(require_auth)):
+    """Get dashboard data"""
+    recent_sessions = db.get_sessions()[:6]
+    return {
         "user": user,
         "recent_sessions": recent_sessions
-    })
+    }
 
-@app.get("/scraper", response_class=HTMLResponse)
-async def scraper_page(request: Request, user = Depends(require_auth)):
-    """Modern scraper interface"""
-    return templates.TemplateResponse("scraper.html", {
-        "request": request,
-        "user": user
-    })
-
-@app.get("/batch", response_class=HTMLResponse)
-async def batch_scraper_page(request: Request, user = Depends(require_auth)):
-    """Batch scraping interface"""
-    return templates.TemplateResponse("batch.html", {
-        "request": request,
-        "user": user
-    })
-
-@app.get("/history", response_class=HTMLResponse)
-async def history_page(request: Request, user = Depends(require_auth)):
-    """Scraping history page"""
+@app.get("/api/sessions")
+async def get_all_sessions(user = Depends(require_auth)):
+    """Get all scraping sessions"""
     sessions_data = db.get_sessions()
-    return templates.TemplateResponse("history.html", {
-        "request": request,
-        "user": user,
+    return {
         "sessions": sessions_data
-    })
+    }
 
 @app.post("/api/scrape")
 async def scrape_single_url(request: Request, scrape_data: ScrapeRequest, user = Depends(require_auth)):
@@ -243,16 +227,16 @@ async def get_session_data(session_id: int, user = Depends(require_auth)):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.post("/logout")
+@app.post("/api/logout")
 async def logout(request: Request):
     """Logout endpoint"""
-    session_id = request.cookies.get("session_id")
-    if session_id and session_id in sessions:
-        del sessions[session_id]
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.replace("Bearer ", "")
+        if token in sessions:
+            del sessions[token]
     
-    response = RedirectResponse(url="/", status_code=302)
-    response.delete_cookie("session_id")
-    return response
+    return {"success": True, "message": "Logged out successfully"}
 
 # Health check
 @app.get("/health")
