@@ -106,6 +106,35 @@ class ApiClient {
     if (!response.ok) throw new Error('Failed to fetch session data');
     return response.json();
   }
+
+  async exportSession(sessionId: number, format: 'csv' | 'excel' | 'pdf') {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/api/session/${sessionId}/export/${format}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!response.ok) throw new Error('Export failed');
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `session_${sessionId}.${format === 'excel' ? 'xlsx' : format}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  async deleteSession(sessionId: number) {
+    const response = await fetch(`${API_URL}/api/session/${sessionId}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeader(),
+    });
+    
+    if (!response.ok) throw new Error('Failed to delete session');
+    return response.json();
+  }
 }
 
 export const api = new ApiClient();

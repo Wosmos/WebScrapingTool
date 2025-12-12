@@ -20,7 +20,7 @@ app = FastAPI(title="Smart Web Scraper API", description="Modern web scraping AP
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_origins=["http://localhost:3001", "http://127.0.0.1:3000"],  # Next.js dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,6 +140,9 @@ async def scrape_single_url(request: Request, scrape_data: ScrapeRequest, user =
             # Store the result
             db.save_scraped_data(session_id, scrape_data.url, content, title=scrape_data.url)
             
+            # Mark session as completed
+            db.complete_session(session_id)
+            
             # Calculate metrics
             word_count = len(content.split()) if content else 0
             char_count = len(content) if content else 0
@@ -158,6 +161,8 @@ async def scrape_single_url(request: Request, scrape_data: ScrapeRequest, user =
                 }
             })
         else:
+            db.save_scraped_data(session_id, scrape_data.url, "", title=scrape_data.url, status="failed", error_message="Failed to extract content")
+            db.complete_session(session_id)
             return JSONResponse({
                 "success": False,
                 "error": "Failed to extract content from URL"
@@ -189,17 +194,22 @@ async def scrape_batch_urls(request: Request, batch_data: ScrapeBatchRequest, us
                         "char_count": len(content)
                     })
                 else:
+                    db.save_scraped_data(session_id, url, "", title=url, status="failed", error_message="No content extracted")
                     results.append({
                         "url": url,
                         "success": False,
                         "error": "No content extracted"
                     })
             except Exception as e:
+                db.save_scraped_data(session_id, url, "", title=url, status="failed", error_message=str(e))
                 results.append({
                     "url": url,
                     "success": False,
                     "error": str(e)
                 })
+        
+        # Mark session as completed
+        db.complete_session(session_id)
         
         return JSONResponse({
             "success": True,
@@ -247,3 +257,184 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
+
+
+@app.get("/api/session/{session_id}/export/csv")
+async def export_csv(session_id: int, user = Depends(require_auth)):
+    """Export session data as CSV"""
+    from fastapi.responses import StreamingResponse
+    import io
+    import csv
+    
+    try:
+        session_data = db.get_session_data(session_id)
+        if not session_data:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['URL', 'Title', 'Word Count', 'Char Count', 'Scraped At', 'Status'])
+        
+        # Write data
+        for item in session_data['data']:
+            writer.writerow([
+                item['url'],
+                item['title'] or '',
+                item['word_count'],
+                item['char_count'],
+                item['scraped_at'],
+                item['status']
+            ])
+        
+        output.seek(0)
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=session_{session_id}.csv"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/session/{session_id}/export/excel")
+async def export_excel(session_id: int, user = Depends(require_auth)):
+    """Export session data as Excel"""
+    from fastapi.responses import StreamingResponse
+    import io
+    import pandas as pd
+    
+    try:
+        session_data = db.get_session_data(session_id)
+        if not session_data:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Create DataFrame
+        df_data = []
+        for item in session_data['data']:
+            df_data.append({
+                'URL': item['url'],
+                'Title': item['title'] or '',
+                'Content Preview': item['content'][:200] if item['content'] else '',
+                'Word Count': item['word_count'],
+                'Char Count': item['char_count'],
+                'Scraped At': item['scraped_at'],
+                'Status': item['status']
+            })
+        
+        df = pd.DataFrame(df_data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Scraped Data')
+        
+        output.seek(0)
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=session_{session_id}.xlsx"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/session/{session_id}/export/pdf")
+async def export_pdf(session_id: int, user = Depends(require_auth)):
+    """Export session data as PDF"""
+    from fastapi.responses import StreamingResponse
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.units import inch
+    import io
+    
+    try:
+        session_data = db.get_session_data(session_id)
+        if not session_data:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#6366f1'),
+            spaceAfter=30,
+        )
+        elements.append(Paragraph(f"Scraping Session Report", title_style))
+        elements.append(Spacer(1, 12))
+        
+        # Session info
+        session_info = session_data['session']
+        info_data = [
+            ['Session Name:', session_info['name']],
+            ['Created:', str(session_info['created_at'])],
+            ['Total URLs:', str(session_info['total_urls'])],
+            ['Status:', session_info['status']],
+        ]
+        
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        elements.append(info_table)
+        elements.append(Spacer(1, 20))
+        
+        # Data table
+        elements.append(Paragraph("Scraped URLs", styles['Heading2']))
+        elements.append(Spacer(1, 12))
+        
+        table_data = [['URL', 'Words', 'Chars', 'Status']]
+        for item in session_data['data']:
+            url_text = item['url'][:50] + '...' if len(item['url']) > 50 else item['url']
+            table_data.append([
+                url_text,
+                str(item['word_count']),
+                str(item['char_count']),
+                item['status']
+            ])
+        
+        data_table = Table(table_data, colWidths=[3.5*inch, 1*inch, 1*inch, 1*inch])
+        data_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6366f1')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        elements.append(data_table)
+        
+        doc.build(elements)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            iter([buffer.getvalue()]),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=session_{session_id}.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/session/{session_id}")
+async def delete_session(session_id: int, user = Depends(require_auth)):
+    """Delete a session"""
+    try:
+        db.delete_session(session_id)
+        return {"success": True, "message": "Session deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

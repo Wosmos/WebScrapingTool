@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function BatchPage() {
+  const router = useRouter();
   const [urls, setUrls] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
@@ -103,12 +105,23 @@ export default function BatchPage() {
           {results && (
             <div className="mt-8 space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold text-white">Results</h3>
-                <div className="px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-xl">
-                  <span className="text-green-300 font-semibold">
-                    {results.successful} / {results.total_urls} successful
-                  </span>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-2xl font-bold text-white">Results</h3>
+                  <div className="px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-xl">
+                    <span className="text-green-300 font-semibold">
+                      {results.successful} / {results.total_urls} successful
+                    </span>
+                  </div>
                 </div>
+                <button
+                  onClick={() => router.push(`/session/${results.session_id}`)}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl transition shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  View Full Details
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
 
               <div className="space-y-3">

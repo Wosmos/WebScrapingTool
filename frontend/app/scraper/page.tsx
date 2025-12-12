@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function ScraperPage() {
+  const router = useRouter();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -107,11 +109,22 @@ export default function ScraperPage() {
 
           {result && (
             <div className="mt-8 space-y-6">
-              <div className="flex items-center gap-2 text-green-300">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <h3 className="text-2xl font-bold text-white">Scraping Complete!</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-300">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <h3 className="text-2xl font-bold text-white">Scraping Complete!</h3>
+                </div>
+                <button
+                  onClick={() => router.push(`/session/${result.session_id}`)}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl transition shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  View Full Details
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
               
               <div className="grid grid-cols-3 gap-4">

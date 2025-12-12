@@ -56,7 +56,7 @@ export default function HistoryPage() {
           ) : sessions.length > 0 ? (
             <div className="space-y-4">
               {sessions.map((session: any) => (
-                <div key={session.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition group">
+                <Link href={`/session/${session.id}`} key={session.id} className="block bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition group cursor-pointer">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-purple-300 transition">{session.name}</h3>
@@ -87,7 +87,13 @@ export default function HistoryPage() {
                       Session #{session.id}
                     </span>
                   </div>
-                </div>
+                  <div className="mt-4 flex items-center gap-2 text-purple-300 text-sm group-hover:text-purple-200 transition">
+                    <span>View Details</span>
+                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
               ))}
             </div>
           ) : (
