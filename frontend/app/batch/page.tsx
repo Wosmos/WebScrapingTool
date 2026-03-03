@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-// import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function BatchPage() {
@@ -20,22 +20,9 @@ export default function BatchPage() {
 
     try {
       const urlList = urls.split('\n').filter(url => url.trim());
-      // const data = await api.scrapeBatch({ urls: urlList, respect_robots: true });
-      
-      // Mocking for Design Preview
-      setTimeout(() => {
-        setResults({
-          successful: 2,
-          total_urls: 3,
-          session_id: '105',
-          results: [
-            { url: 'https://github.com/trending', success: true, word_count: 3402, char_count: 12050 },
-            { url: 'https://news.ycombinator.com', success: true, word_count: 850, char_count: 4200 },
-            { url: 'https://broken-target.io/api', success: false, error: 'Connection Refused: ETIMEDOUT' }
-          ]
-        });
-        setLoading(false);
-      }, 1500);
+      const data = await api.scrapeBatch({ urls: urlList, respect_robots: true });
+      setResults(data);
+      setLoading(false);
     } catch (err) {
       setError('Operational failure: Unable to establish handshake with scrape engine.');
       setLoading(false);

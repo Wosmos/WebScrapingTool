@@ -3,6 +3,9 @@ Modern FastAPI Web Scraper Application
 Built with contemporary design and proper separation of UI from logic
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +16,17 @@ from database import ScrapingDatabase
 from web_scraper import get_website_text_content
 from typing import Optional
 import secrets
+import json
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+def serialize(data):
+    """Convert data with datetime objects to JSON-safe dict."""
+    return json.loads(json.dumps(data, cls=DateTimeEncoder))
 
 # Initialize FastAPI app
 app = FastAPI(title="Smart Web Scraper API", description="Modern web scraping API")
@@ -29,9 +43,12 @@ app.add_middleware(
 # Database
 db = ScrapingDatabase()
 
-# Admin credentials
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'your_username')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'your_secure_password')
+# Admin credentials (loaded from .env)
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+
+if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+    raise RuntimeError("ADMIN_USERNAME and ADMIN_PASSWORD must be set in .env")
 
 # Session storage (in production, use Redis or database)
 sessions = {}
@@ -113,18 +130,18 @@ async def login_api(login_data: LoginRequest):
 async def dashboard(user = Depends(require_auth)):
     """Get dashboard data"""
     recent_sessions = db.get_sessions()[:6]
-    return {
+    return serialize({
         "user": user,
         "recent_sessions": recent_sessions
-    }
+    })
 
 @app.get("/api/sessions")
 async def get_all_sessions(user = Depends(require_auth)):
     """Get all scraping sessions"""
     sessions_data = db.get_sessions()
-    return {
+    return serialize({
         "sessions": sessions_data
-    }
+    })
 
 @app.post("/api/scrape")
 async def scrape_single_url(request: Request, scrape_data: ScrapeRequest, user = Depends(require_auth)):
@@ -231,7 +248,7 @@ async def get_session_data(session_id: int, user = Depends(require_auth)):
     try:
         session_data = db.get_session_data(session_id)
         if session_data:
-            return JSONResponse(session_data)
+            return JSONResponse(serialize(session_data))
         else:
             return JSONResponse({"error": "Session not found"}, status_code=404)
     except Exception as e:

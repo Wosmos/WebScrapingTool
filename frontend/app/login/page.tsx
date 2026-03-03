@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-// import { api } from '@/lib/api'; // Commented out for immediate copy-paste compatibility
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // await api.login(username, password);
+      await api.login(username, password);
       router.push('/dashboard');
     } catch (err) {
       setError('Invalid credentials. Please try again.');

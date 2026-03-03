@@ -9,11 +9,10 @@ class ScrapingDatabase:
     """Database handler for scraping history and results using PostgreSQL"""
     
     def __init__(self):
-        # PostgreSQL connection string
-        self.db_url = os.environ.get(
-            'DATABASE_URL',
-            'postgresql://neondb_owner:npg_U7FlNMqc1Pjt@ep-wandering-water-addrnuvi-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
-        )
+        # PostgreSQL connection string (loaded from .env)
+        self.db_url = os.environ.get('DATABASE_URL')
+        if not self.db_url:
+            raise RuntimeError("DATABASE_URL must be set in .env")
         self.init_database()
     
     def get_connection(self):

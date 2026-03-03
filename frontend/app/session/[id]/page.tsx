@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-// import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function SessionDetailPage() {
@@ -17,20 +17,9 @@ export default function SessionDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // const data = await api.getSessionData(sessionId);
-        // setSessionData(data);
-        
-        // Mocking for Design Preview
-        setTimeout(() => {
-          setSessionData({
-            session: { id: sessionId, name: 'Market Intelligence Sweep', total_urls: 12, completed_urls: 12, status: 'completed', created_at: new Date().toISOString() },
-            data: [
-              { id: 1, url: 'https://example.com/products/v1', title: 'Enterprise Solutions', status: 'success', word_count: 1240, char_count: 8400, scraped_at: new Date().toISOString(), content: 'Extracted content body preview here...' },
-              { id: 2, url: 'https://bad-link.err', status: 'failed', error_message: '404: Resource not located on remote server.', scraped_at: new Date().toISOString() }
-            ]
-          });
-          setLoading(false);
-        }, 800);
+        const data = await api.getSessionData(Number(sessionId));
+        setSessionData(data);
+        setLoading(false);
       } catch (error) {
         router.push('/history');
       }
@@ -40,8 +29,11 @@ export default function SessionDetailPage() {
 
   const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
     setExporting(format);
-    // await api.exportSession(sessionId, format);
-    setTimeout(() => setExporting(null), 2000);
+    try {
+      await api.exportSession(Number(sessionId), format);
+    } finally {
+      setExporting(null);
+    }
   };
 
   if (loading) return (

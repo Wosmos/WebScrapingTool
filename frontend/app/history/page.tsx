@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function HistoryPage() {
@@ -11,17 +11,9 @@ export default function HistoryPage() {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        // const data = await api.getSessions();
-        // setSessions(data.sessions || []);
-        
-        // Mock data for design consistency
-        setTimeout(() => {
-          setSessions([
-            { id: '8821', name: 'E-commerce Price Audit', total_urls: 42, created_at: new Date().toISOString(), completed_at: new Date().toISOString() },
-            { id: '8819', name: 'News Aggregator Feed', total_urls: 12, created_at: new Date().toISOString(), completed_at: null },
-          ]);
-          setLoading(false);
-        }, 1000);
+        const data = await api.getSessions();
+        setSessions(data.sessions || []);
+        setLoading(false);
       } catch (error) {
         console.error('Failed to fetch sessions');
         setLoading(false);

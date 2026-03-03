@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-// import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -13,20 +13,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // const result = await api.getDashboard();
-        // setData(result);
-        
-        // Mocking data for design preview
-        setTimeout(() => {
-          setData({
-            user: { username: 'DigitalAlchemist' },
-            recent_sessions: [
-              { id: '102', name: 'Product Catalog Alpha', total_urls: 150, created_at: new Date().toISOString() },
-              { id: '101', name: 'Competitor Pricing', total_urls: 12, created_at: new Date().toISOString() }
-            ]
-          });
-          setLoading(false);
-        }, 800);
+        const result = await api.getDashboard();
+        setData(result);
+        setLoading(false);
       } catch (error) {
         router.push('/login');
       }
@@ -36,7 +25,7 @@ export default function DashboardPage() {
   }, [router]);
 
   const handleLogout = async () => {
-    // await api.logout();
+    await api.logout();
     router.push('/login');
   };
 

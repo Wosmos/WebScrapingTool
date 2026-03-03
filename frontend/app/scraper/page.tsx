@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-// import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function ScraperPage() {
@@ -19,19 +19,9 @@ export default function ScraperPage() {
     setLoading(true);
 
     try {
-      // Simulation for design view
-      // const data = await api.scrapeSingleUrl({ url, respect_robots: true });
-      // setResult(data);
-      
-      // Temporary mock for visual testing
-      setTimeout(() => {
-        setResult({
-          session_id: '123',
-          metrics: { word_count: 1240, char_count: 8540, line_count: 142 },
-          content: "Example extracted content from the target website..."
-        });
-        setLoading(false);
-      }, 1500);
+      const data = await api.scrapeSingleUrl({ url, respect_robots: true });
+      setResult(data);
+      setLoading(false);
     } catch (err) {
       setError('Failed to scrape URL. Please try again.');
       setLoading(false);
