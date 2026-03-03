@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 .venv/
+scraping_history.db
+jobs.sqlite

@@ -32,9 +32,10 @@ def serialize(data):
 app = FastAPI(title="Smart Web Scraper API", description="Modern web scraping API")
 
 # CORS Configuration
+cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_origins=[o.strip() for o in cors_origins.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -271,11 +272,6 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
-
-
 @app.get("/api/session/{session_id}/export/csv")
 async def export_csv(session_id: int, user = Depends(require_auth)):
     """Export session data as CSV"""
@@ -455,3 +451,8 @@ async def delete_session(session_id: int, user = Depends(require_auth)):
         return {"success": True, "message": "Session deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 5000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

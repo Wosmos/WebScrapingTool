@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.git/
+frontend/
+node_modules/
+*.pyc
+.env
+app.py
+scheduler.py
+scraping_history.db
+templates/
+.streamlit/
+.replit
+uv.lock
