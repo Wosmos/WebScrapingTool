@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { api } from '@/lib/api';
+// import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function SessionDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const sessionId = parseInt(params.id as string);
+  const sessionId = params.id as string;
   
   const [sessionData, setSessionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -17,255 +17,157 @@ export default function SessionDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await api.getSessionData(sessionId);
-        setSessionData(data);
+        // const data = await api.getSessionData(sessionId);
+        // setSessionData(data);
+        
+        // Mocking for Design Preview
+        setTimeout(() => {
+          setSessionData({
+            session: { id: sessionId, name: 'Market Intelligence Sweep', total_urls: 12, completed_urls: 12, status: 'completed', created_at: new Date().toISOString() },
+            data: [
+              { id: 1, url: 'https://example.com/products/v1', title: 'Enterprise Solutions', status: 'success', word_count: 1240, char_count: 8400, scraped_at: new Date().toISOString(), content: 'Extracted content body preview here...' },
+              { id: 2, url: 'https://bad-link.err', status: 'failed', error_message: '404: Resource not located on remote server.', scraped_at: new Date().toISOString() }
+            ]
+          });
+          setLoading(false);
+        }, 800);
       } catch (error) {
-        console.error('Failed to fetch session data');
         router.push('/history');
-      } finally {
-        setLoading(false);
       }
     };
-
-    if (sessionId) {
-      fetchData();
-    }
+    fetchData();
   }, [sessionId, router]);
 
   const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
     setExporting(format);
-    try {
-      await api.exportSession(sessionId, format);
-    } catch (error) {
-      alert('Export failed. Please try again.');
-    } finally {
-      setExporting(null);
-    }
+    // await api.exportSession(sessionId, format);
+    setTimeout(() => setExporting(null), 2000);
   };
 
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this session?')) {
-      try {
-        await api.deleteSession(sessionId);
-        router.push('/history');
-      } catch (error) {
-        alert('Failed to delete session');
-      }
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-          <p className="text-white text-xl">Loading session...</p>
-        </div>
+  if (loading) return (
+    <div className="min-h-screen bg-[#02040a] flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-white/10 border-t-purple-500 mb-4"></div>
+        <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black">Parsing Session Data</p>
       </div>
-    );
-  }
-
-  if (!sessionData) {
-    return null;
-  }
+    </div>
+  );
 
   const { session, data } = sessionData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Navigation */}
-      <nav className="bg-white/5 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between h-20 items-center">
-            <Link href="/history" className="flex items-center gap-3 text-white hover:text-purple-300 transition">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span className="text-xl font-semibold">Back to History</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-white">Session #{session.id}</span>
-            </div>
+    <div className="min-h-screen bg-[#02040a] text-slate-200 font-sans pb-20">
+      {/* 1. Header Navigation */}
+      <nav className="border-b border-white/5 bg-[#02040a]/80 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+          <Link href="/history" className="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition">
+            <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            History Archive
+          </Link>
+          <div className="text-[10px] font-mono text-slate-500 bg-white/5 px-3 py-1 rounded border border-white/10">
+            ID: {session.id}
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* Session Info Card */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 mb-8">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-4">{session.name}</h1>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div>
-                  <p className="text-purple-300 text-sm mb-1">Total URLs</p>
-                  <p className="text-2xl font-bold text-white">{session.total_urls}</p>
-                </div>
-                <div>
-                  <p className="text-purple-300 text-sm mb-1">Completed</p>
-                  <p className="text-2xl font-bold text-green-400">{session.completed_urls}</p>
-                </div>
-                <div>
-                  <p className="text-purple-300 text-sm mb-1">Status</p>
-                  <span className="inline-block px-3 py-1 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg text-sm font-medium">
-                    {session.status}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-purple-300 text-sm mb-1">Created</p>
-                  <p className="text-white text-sm">{new Date(session.created_at).toLocaleString()}</p>
-                </div>
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        {/* 2. Meta Stats Ribbon */}
+        <div className="bg-[#0a0f1d]/60 border border-white/5 rounded-[2rem] p-8 mb-8 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-light text-white tracking-tight">{session.name}</h1>
+              <p className="text-slate-500 text-xs font-medium italic">{new Date(session.created_at).toLocaleString()}</p>
+            </div>
+            
+            <div className="flex gap-8 border-l border-white/5 pl-8">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Queue</p>
+                <p className="text-2xl font-light text-white">{session.total_urls}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Processed</p>
+                <p className="text-2xl font-light text-emerald-500">{session.completed_urls}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Status</p>
+                <span className="text-[10px] font-black uppercase tracking-tighter px-2 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded">
+                  {session.status}
+                </span>
               </div>
             </div>
           </div>
-
-          {/* Export Buttons */}
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => handleExport('csv')}
-              disabled={exporting === 'csv'}
-              className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-300 rounded-xl transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {exporting === 'csv' ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export CSV
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => handleExport('excel')}
-              disabled={exporting === 'excel'}
-              className="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 rounded-xl transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {exporting === 'excel' ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export Excel
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => handleExport('pdf')}
-              disabled={exporting === 'pdf'}
-              className="px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 rounded-xl transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {exporting === 'pdf' ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Export PDF
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={handleDelete}
-              className="ml-auto px-6 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-xl transition flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Delete Session
-            </button>
-          </div>
         </div>
 
-        {/* Scraped Data */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Scraped Data</h2>
+        {/* 3. Global Actions */}
+        <div className="flex flex-wrap items-center gap-3 mb-12">
+          {['csv', 'excel', 'pdf'].map((fmt) => (
+            <button
+              key={fmt}
+              onClick={() => handleExport(fmt as any)}
+              disabled={!!exporting}
+              className="px-5 py-2.5 bg-white/5 border border-white/10 hover:border-purple-500/50 text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl transition flex items-center gap-2 disabled:opacity-30"
+            >
+              {exporting === fmt ? <div className="w-3 h-3 border-2 border-t-transparent border-white rounded-full animate-spin" /> : 
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              Export {fmt}
+            </button>
+          ))}
           
-          {data && data.length > 0 ? (
-            <div className="space-y-4">
-              {data.map((item: any) => (
-                <div key={item.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2 break-all">{item.url}</h3>
-                      {item.title && (
-                        <p className="text-purple-200 text-sm mb-2">{item.title}</p>
-                      )}
-                    </div>
-                    <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                      item.status === 'success' 
-                        ? 'bg-green-500/20 border border-green-500/50 text-green-300'
-                        : 'bg-red-500/20 border border-red-500/50 text-red-300'
-                    }`}>
-                      {item.status}
-                    </span>
+          <button className="ml-auto group px-5 py-2.5 border border-red-500/20 text-red-500/50 hover:text-red-500 hover:bg-red-500/5 text-[10px] font-black uppercase tracking-widest rounded-xl transition flex items-center gap-2">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Purge Session
+          </button>
+        </div>
+
+        {/* 4. Scraped Data Nodes */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500 mb-6 flex items-center gap-3">
+            Extracted Payloads
+            <div className="h-px bg-white/5 flex-1" />
+          </h2>
+          
+          {data.map((item: any) => (
+            <div key={item.id} className="bg-[#0a0f1d]/40 border border-white/5 rounded-2xl overflow-hidden">
+              <div className="p-6 flex flex-col md:flex-row justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`w-2 h-2 rounded-full ${item.status === 'success' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
+                    <h3 className="text-sm font-mono text-purple-400 truncate max-w-md">{item.url}</h3>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
-                      <p className="text-blue-200 text-xs mb-1">Words</p>
-                      <p className="text-blue-300 text-xl font-bold">{item.word_count?.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3">
-                      <p className="text-green-200 text-xs mb-1">Characters</p>
-                      <p className="text-green-300 text-xl font-bold">{item.char_count?.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3">
-                      <p className="text-purple-200 text-xs mb-1">Scraped</p>
-                      <p className="text-purple-300 text-sm font-semibold">{new Date(item.scraped_at).toLocaleTimeString()}</p>
-                    </div>
-                  </div>
-
-                  {item.content && (
-                    <details className="group">
-                      <summary className="cursor-pointer text-purple-300 hover:text-purple-200 transition flex items-center gap-2">
-                        <svg className="w-5 h-5 group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        View Content
-                      </summary>
-                      <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4 max-h-64 overflow-y-auto">
-                        <pre className="text-purple-100 text-sm whitespace-pre-wrap">{item.content}</pre>
-                      </div>
-                    </details>
-                  )}
-
-                  {item.error_message && (
-                    <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
-                      <p className="text-red-300 text-sm">{item.error_message}</p>
-                    </div>
-                  )}
+                  <p className="text-white font-medium text-lg">{item.title || 'No Title Detected'}</p>
                 </div>
-              ))}
+                
+                <div className="flex items-center gap-4">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-[10px] text-slate-600 font-black uppercase">{item.word_count || 0} Words</p>
+                    <p className="text-[10px] text-slate-600 font-black uppercase">{item.char_count || 0} Chars</p>
+                  </div>
+                  <div className="h-10 w-px bg-white/5" />
+                  <p className="text-[10px] font-mono text-slate-500">{new Date(item.scraped_at).toLocaleTimeString()}</p>
+                </div>
+              </div>
+
+              {item.status === 'success' ? (
+                <details className="group border-t border-white/5">
+                  <summary className="px-6 py-3 cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-white/[0.02] transition list-none flex items-center justify-between">
+                    Raw Payload Inspection
+                    <svg className="w-4 h-4 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </summary>
+                  <div className="p-6 bg-black/40">
+                    <pre className="text-xs font-mono text-slate-400 leading-relaxed whitespace-pre-wrap selection:bg-purple-500/30">
+                      {item.content}
+                    </pre>
+                  </div>
+                </details>
+              ) : (
+                <div className="px-6 py-4 bg-red-500/5 border-t border-red-500/10">
+                  <p className="text-xs font-mono text-red-400">LOG_ERROR: {item.error_message}</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <p className="text-purple-200 text-center py-8">No data available</p>
-          )}
+          ))}
         </div>
       </main>
     </div>
